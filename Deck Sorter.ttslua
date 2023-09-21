@@ -1,0 +1,305 @@
+--This is the order cards are looked for, and with what name.
+ref_CMC = {
+    " 0cmc",
+    " 1cmc",
+    " 2cmc",
+    " 3cmc",
+    " 4cmc",
+    " 5cmc",
+    " 6cmc",
+    " 7cmc",
+    " 8cmc",
+    " 9cmc",
+    "10cmc",
+    "11cmc",
+    "12cmc",
+    "13cmc",
+    "14cmc",
+    "15cmc",
+    "16cmc",
+}
+
+ref_Type = {
+    "Land",
+    "Creature",
+    "Artifact",
+    "Enchantment",
+    "Planeswalker",
+    "Instant",
+    "Sorcery",
+    "Battle",
+}
+--This is the order suits are looked for
+--If you have no suit names, just leave this as-is and make groupSuitMode = 0
+--ref_suitOrder = {
+--  "Spade",
+--    "Heart",
+--    "Club",
+--    "Diamond",
+--}
+
+--This is the way suits are grouped
+groupSuitMode = 0
+--0: Do not use suit names
+--1: All suit types are together
+--2: All card number types are together
+
+
+--End of variables to edit
+
+--Startup
+function onLoad()
+    self.createButton({
+        click_function="click_sort_CMC", function_owner=self,
+        position={-0.85,0.1,0.85}, height=300, width=800, color={0,0,0,0}
+    })
+    self.createButton({
+        click_function="click_sort_Type", function_owner=self,
+        position={-0.85,0.1,-0.85}, height=300, width=800, color={0,0,0,0}
+    })
+    self.createButton({
+        click_function="click_toggle_stacking", function_owner=self,
+        position={-0.85,0.1,0}, height=300, width=800, color={0,0,0,0},
+        tooltip="Toggle Stacking/Spreading"
+    })
+end
+
+--Additional constants
+
+lastColumnPos = 0
+xSpreadMulti = 2.4
+zSpreadMulti = 0.55
+flagNoDeck = 0
+i = 0 --Columns
+k = 0 --Rows
+ref = {}
+ref_Name = {}
+hash = {}
+test = {}
+ref_Rot = {
+  0,
+  90,
+  180,
+  270,
+}
+--Card sort control
+
+
+
+--Activated by button triggers sorting action
+function click_sort_CMC()
+    if flagNoDeck == 0 then
+      broadcastToAll("Sorting...", {0.9,0.2,0.2})
+    end
+    local deck_pos = self.positionToWorld({-1,0,0})
+    local find_func = function(o) return o.tag=="Deck" end
+    local deckList = findInRadiusBy(deck_pos, 1, find_func)
+
+    local deck_rot = math.floor(self.getRotation().y)
+      --print(deck_rot)
+    if deck_rot >= 85 and deck_rot<=95 then
+      --print(deck_rot)
+      --print("90")
+    elseif deck_rot >= 175 and deck_rot<=185 then
+      --print(deck_rot)
+      --print("180")
+    elseif deck_rot >= 265 and deck_rot<=275 then
+      --print(deck_rot)
+      --print("270")
+    elseif deck_rot >= 355 or deck_rot<=5 then
+      --print(deck_rot)
+      --print("0")
+
+      xSpreadMulti = xSpreadMulti * -1
+      zSpreadMulti = zSpreadMulti * -1
+
+    end
+
+    if #deckList == 1 then
+        lastColumnPos = 0
+        local heightOffset = 0.5 * #deckList[1].getObjects()
+
+        test = deckList[1].getObjects()
+
+        for _,v in ipairs(test) do
+          if not hash[v] then
+            ref_Name[#ref_Name + 1] = v -- you could print here instead of saving to result table if you wanted
+            hash[v] = true
+          end
+        end
+
+        --print("--------")
+
+        j = #ref_Name
+
+        --print(#ref_Name)
+
+        for _, j in pairs(ref_Name) do
+          --print(ref_Name[_].nickname)
+        end
+
+        sortDeck(deckList[1], self.positionToWorld({-2.8,1,0}), 0)
+        broadcastToAll("Sorting done!", {0.9,0.2,0.2})
+        lastColumnPos = 0
+        i = 0
+        k = 0
+        ref_Name = {}
+    else
+        broadcastToAll("No deck to sort.", {0.9,0.2,0.2})
+        flagNoDeck = 1
+    end
+end
+
+function click_sort_Type()
+    if flagNoDeck == 0 then
+      broadcastToAll("Sorting...", {0.9,0.2,0.2})
+    end
+    local deck_pos = self.positionToWorld({-1,0,0})
+    local find_func = function(o) return o.tag=="Deck" end
+    local deckList = findInRadiusBy(deck_pos, 1, find_func)
+
+    local deck_rot = math.floor(self.getRotation().y)
+      --print(deck_rot)
+    if deck_rot >= 85 and deck_rot<=95 then
+      --print(deck_rot)
+      --print("90")
+    elseif deck_rot >= 175 and deck_rot<=185 then
+      --print(deck_rot)
+      --print("180")
+    elseif deck_rot >= 265 and deck_rot<=275 then
+      --print(deck_rot)
+      --print("270")
+    elseif deck_rot >= 355 or deck_rot<=5 then
+      --print(deck_rot)
+      --print("0")
+
+      xSpreadMulti = xSpreadMulti * -1
+      zSpreadMulti = zSpreadMulti * -1
+
+    end
+
+    if #deckList == 1 then
+        lastColumnPos = 0
+        local heightOffset = 0.5 * #deckList[1].getObjects()
+        sortDeck(deckList[1], self.positionToWorld({-2.8,1,0}), 1)
+        broadcastToAll("Sorting done!", {0.9,0.2,0.2})
+        lastColumnPos = 0
+        i = 0
+        k = 0
+    else
+        broadcastToAll("No deck to sort.", {0.9,0.2,0.2})
+    end
+end
+
+function click_toggle_stacking()
+    if zSpreadMulti == 0.55 then
+      zSpreadMulti = 0
+      broadcastToAll("Stacking mode", {0.9,0.2,0.2})
+    elseif zSpreadMulti == 0 then
+      zSpreadMulti = 0.55
+      broadcastToAll("Spreading mode", {0.9,0.2,0.2})
+    end
+end
+
+--Sorting logic
+function sortDeck(deck, pos, mode)
+    function sortDeck_routine()
+        local placedCards = {}
+        if mode == 0 then
+          ref = ref_CMC
+        elseif  mode == 1 then
+          ref = ref_Type
+        else
+          ref = nil
+          return 1
+        end
+        if groupSuitMode == 0 then
+            for _, cardOrderName in ipairs(ref) do
+                if #deck.getObjects() ~= 0 then
+                    local cardInfo = findCardInfo(deck, cardOrderName, "")
+                    if cardInfo ~= nil then
+                        k = k + 1
+                        pos.y = pos.y + 0.5
+
+                        if _>i then
+                          i = _
+                          k = 0
+                          pos.y = 1
+                          lastColumnPos = pos.x+(_-1)*xSpreadMulti
+                        end
+
+                        deck.takeObject({position={pos.x+(_-1)*xSpreadMulti,pos.y,pos.z-k*zSpreadMulti},
+                        index=cardInfo.index})
+                        sortDeck(deck, pos, mode)
+                        return 1
+                    end
+                else
+                    --print(lastColumnPos)
+                    deck.takeObject({position={lastColumnPos, pos.y+2, pos.z-(k+1)*zSpreadMulti}})
+                end
+            end
+
+        end
+
+        return 1
+    end
+    startLuaCoroutine(self, 'sortDeck_routine')
+end
+
+
+
+
+--Utility, collects information/perform basic actions
+
+
+
+--Finds objects in radius of a position, accepts optional filtering function
+--Example func: function(o) return o.tag=="Deck" or o.tag=="Card" end
+function findInRadiusBy(pos, radius, func)
+    local objList = Physics.cast({
+        origin=pos, direction={0,1,0}, type=2, size={radius,radius,radius},
+        max_distance=0, --debug=true
+    })
+
+    local refinedList = {}
+    for _, obj in ipairs(objList) do
+        if func == nil then
+            table.insert(refinedList, obj.hit_object)
+        else
+            if func(obj.hit_object) then
+                table.insert(refinedList, obj.hit_object)
+            end
+        end
+    end
+
+    return refinedList
+end
+
+--Finds a card in a deck with the given name and suit
+function findCardInfo(deck, cardOrderName, suitOrderName)
+    local name_co = string.lower(cardOrderName)
+    local name_so = string.lower(suitOrderName)
+    for _, card in ipairs(deck.getObjects()) do
+        local found_co = doesCardContainString(card, name_co)
+        local found_so = doesCardContainString(card, name_so)
+        if groupSuitMode == 0 and found_co == true then
+            return card
+        elseif found_co == true and found_so == true then
+            return card
+        end
+    end
+    return nil
+end
+
+--Finds substring withing strings (lower case) for name/description
+function doesCardContainString(card, s)
+    local nickname = string.lower(card.nickname)
+    if string.find(nickname, s, 1, true) ~= nil then
+        return true
+    end
+    --local description = string.lower(card.description)
+    --if string.find(description, s, 1, true) ~= nil then
+    --    return true
+    --end
+    return false
+end
